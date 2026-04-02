@@ -59,6 +59,7 @@ const sidebarItems = [
 ];
 
 const ClientLayout = () => {
+  const brandName = "Frap Pay";
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [expanded, setExpanded] = useState(["Reports"]);
@@ -111,27 +112,23 @@ const ClientLayout = () => {
   const isActive = (path) => location.pathname === path;
 
   const renderSidebarContent = (navRef) => (
-    <div className="flex flex-col h-full">
-      <div className="border-b border-border/50 p-6">
-        <Link to="/client" className="flex items-center gap-2.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl gradient-primary">
-            <span className="text-base font-bold text-primary-foreground">
-              F
-            </span>
-          </div>
+    <div className="flex h-full flex-col">
+      <div className="border-b border-border/50 px-5 py-4">
+        <Link to="/client" className="flex items-center gap-3">
+          <img src="/Logo.png" alt={`${brandName} logo`} className="h-12 w-12 shrink-0 object-contain" />
           {sidebarOpen && (
             <span className="text-[1.15rem] font-semibold tracking-tight text-foreground">
-              FrapPay
+              {brandName}
             </span>
           )}
         </Link>
       </div>
 
-      <nav ref={navRef} onScroll={handleSidebarScroll} className="flex-1 space-y-1.5 overflow-y-auto p-4">
+      <nav ref={navRef} onScroll={handleSidebarScroll} className="hide-scrollbar flex-1 space-y-1.5 overflow-y-auto p-4">
         <Link
           to="/client"
           className={cn(
-            "flex items-center gap-3 px-4 py-3 rounded-2xl text-[15px] font-medium transition-all",
+            "flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-medium transition-all",
             isActive("/client")
               ? "bg-primary/10 text-primary"
               : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -153,9 +150,7 @@ const ClientLayout = () => {
 
                   {sidebarOpen && (
                     <>
-                      <span className="flex-1 text-left">
-                        {item.label}
-                      </span>
+                      <span className="flex-1 text-left">{item.label}</span>
 
                       {expanded.includes(item.label) ? (
                         <ChevronDown className="h-3.5 w-3.5" />
@@ -167,7 +162,7 @@ const ClientLayout = () => {
                 </button>
 
                 {sidebarOpen && expanded.includes(item.label) && (
-                  <div className="ml-7 space-y-0.5 mt-0.5">
+                  <div className="ml-7 mt-0.5 space-y-0.5">
                     {item.children.map((child) => (
                       <Link
                         key={child.path}
@@ -176,7 +171,7 @@ const ClientLayout = () => {
                           "block rounded-xl px-3.5 py-2.5 text-[14px] transition-all",
                           isActive(child.path)
                             ? "bg-primary/10 text-primary font-medium"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                            : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                         )}
                       >
                         {child.label}
@@ -206,10 +201,10 @@ const ClientLayout = () => {
   );
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-background">
       <aside
         className={cn(
-          "hidden lg:flex shrink-0 flex-col border-r border-border/50 bg-card transition-all duration-300",
+          "hidden shrink-0 flex-col border-r border-border/50 bg-card transition-all duration-300 lg:flex",
           sidebarOpen ? "w-60" : "w-16"
         )}
       >
@@ -222,13 +217,13 @@ const ClientLayout = () => {
             className="absolute inset-0 bg-foreground/20 backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="absolute left-0 top-0 h-full w-60 bg-card border-r border-border/50 shadow-lg">
+          <aside className="absolute left-0 top-0 h-full w-60 border-r border-border/50 bg-card shadow-lg">
             {renderSidebarContent(mobileNavRef)}
           </aside>
         </div>
       )}
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex min-w-0 flex-1 flex-col">
         <header className="z-10 flex h-[4.5rem] shrink-0 items-center justify-between border-b border-border/50 bg-card/80 px-5 backdrop-blur-md lg:px-7">
           <div className="flex items-center gap-3">
             <Button
@@ -246,22 +241,18 @@ const ClientLayout = () => {
               className="hidden lg:flex"
               onClick={() => setSidebarOpen(!sidebarOpen)}
             >
-              {sidebarOpen ? (
-                <X className="h-4 w-4" />
-              ) : (
-                <Menu className="h-4 w-4" />
-              )}
+              {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </Button>
 
-            <div className="hidden sm:flex items-center gap-3">
+            <div className="hidden items-center gap-3 sm:flex">
               <div className="flex items-center gap-2 rounded-2xl bg-success/10 px-4 py-2 text-[13px] font-semibold text-success">
                 <Wallet className="h-3.5 w-3.5" />
-                <span>Payin: ₹24,50,000</span>
+                <span>Payin: Rs 24,50,000</span>
               </div>
 
               <div className="flex items-center gap-2 rounded-2xl bg-primary/10 px-4 py-2 text-[13px] font-semibold text-primary">
                 <Wallet className="h-3.5 w-3.5" />
-                <span>Payout: ₹18,20,000</span>
+                <span>Payout: Rs 18,20,000</span>
               </div>
             </div>
           </div>
@@ -272,44 +263,39 @@ const ClientLayout = () => {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="gap-2 px-2">
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                <Button
+                  variant="ghost"
+                  className="gap-2 rounded-full border border-border/70 bg-muted/60 px-2.5 hover:bg-muted"
+                >
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
                     <User className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <span className="hidden sm:block text-sm font-medium">
-                    Rahul S.
-                  </span>
+                  <span className="hidden text-sm font-medium sm:block">Rahul S.</span>
                 </Button>
               </DropdownMenuTrigger>
 
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem
-                  onClick={() => navigate("/client/profile")}
-                >
-                  <User className="h-4 w-4 mr-2" /> Profile
+                <DropdownMenuItem onClick={() => navigate("/client/profile")}>
+                  <User className="mr-2 h-4 w-4" /> Profile
                 </DropdownMenuItem>
 
-                <DropdownMenuItem
-                  onClick={() => navigate("/client/settings")}
-                >
-                  <Settings className="h-4 w-4 mr-2" /> Settings
+                <DropdownMenuItem onClick={() => navigate("/client/settings")}>
+                  <Settings className="mr-2 h-4 w-4" /> Settings
                 </DropdownMenuItem>
 
-                <DropdownMenuItem
-                  onClick={() => navigate("/client/forgot-pin")}
-                >
-                  <KeyRound className="h-4 w-4 mr-2" /> Forgot PIN
+                <DropdownMenuItem onClick={() => navigate("/client/forgot-pin")}>
+                  <KeyRound className="mr-2 h-4 w-4" /> Forgot PIN
                 </DropdownMenuItem>
 
                 {profile?.fallbackUrls?.payin && (
                   <DropdownMenuItem onClick={() => window.open(profile.fallbackUrls.payin, "_blank", "noopener,noreferrer")}>
-                    <Globe className="h-4 w-4 mr-2" /> Callback Payin
+                    <Globe className="mr-2 h-4 w-4" /> Callback Payin
                   </DropdownMenuItem>
                 )}
 
                 {profile?.fallbackUrls?.payout && (
                   <DropdownMenuItem onClick={() => window.open(profile.fallbackUrls.payout, "_blank", "noopener,noreferrer")}>
-                    <ExternalLink className="h-4 w-4 mr-2" /> Callback Payout
+                    <ExternalLink className="mr-2 h-4 w-4" /> Callback Payout
                   </DropdownMenuItem>
                 )}
 
@@ -319,7 +305,7 @@ const ClientLayout = () => {
                   onClick={() => navigate("/client/login")}
                   className="text-destructive"
                 >
-                  <LogOut className="h-4 w-4 mr-2" /> Logout
+                  <LogOut className="mr-2 h-4 w-4" /> Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -335,3 +321,7 @@ const ClientLayout = () => {
 };
 
 export default ClientLayout;
+
+
+
+
