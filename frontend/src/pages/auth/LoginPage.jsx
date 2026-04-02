@@ -50,7 +50,7 @@ const LoginPage = ({ type }) => {
           </div>
 
           <h1 className="text-4xl font-bold text-primary-foreground mb-3">
-            FinStack
+           FrapPay
           </h1>
 
           <p className="text-primary-foreground/70 text-lg max-w-md">

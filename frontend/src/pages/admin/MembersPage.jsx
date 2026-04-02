@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import {
   Tabs,
   TabsContent,
@@ -50,6 +51,7 @@ const initialForm = {
   city: "",
   state: "",
   pincode: "",
+  ipAddress: "",
   bankName: "",
   accountNo: "",
   ifsc: "",
@@ -62,6 +64,13 @@ const initialForm = {
   aadhaarImage: "",
   panImage: "",
   voterIdImage: "",
+  services: {
+    payout: false,
+    fundRequest: false,
+    payin: false,
+    pan: false,
+    aeps: false,
+  },
 };
 
 const StatPill = ({ icon: Icon, label, value, tint }) => (
@@ -141,6 +150,13 @@ const MembersPage = () => {
 
   const updateForm = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const updateService = (key, value) => {
+    setForm((prev) => ({
+      ...prev,
+      services: { ...prev.services, [key]: value },
+    }));
   };
 
   const handleImageUpload = (field) => (event) => {
@@ -362,6 +378,8 @@ const MembersPage = () => {
                     <InputField label="Pincode" field="pincode" placeholder="000000" />
                   </div>
 
+                  <InputField label="IP Address" field="ipAddress" placeholder="e.g. 49.42.211.8" />
+
                   <div className="flex justify-end">
                     <Button onClick={() => setAddTab("bank")} className="rounded-xl px-5">
                       Next: Bank Details
@@ -433,6 +451,27 @@ const MembersPage = () => {
                       preview={form.voterIdImage}
                       onChange={handleImageUpload("voterIdImage")}
                     />
+                  </div>
+
+                  <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
+                    <div className="mb-3 text-sm font-semibold text-foreground">Service Access</div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {[
+                        ["payout", "Payout Service"],
+                        ["fundRequest", "Fund Request Service"],
+                        ["payin", "Payin Service"],
+                        ["pan", "PAN Service"],
+                        ["aeps", "AEPS Service"],
+                      ].map(([key, label]) => (
+                        <div key={key} className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/20 px-4 py-3">
+                          <div>
+                            <div className="text-sm font-medium text-foreground">{label}</div>
+                            <div className="text-xs text-muted-foreground">Set member access at onboarding</div>
+                          </div>
+                          <Switch checked={Boolean(form.services[key])} onCheckedChange={(checked) => updateService(key, checked)} />
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="rounded-2xl border border-success/20 bg-success/5 p-4 text-sm text-muted-foreground">

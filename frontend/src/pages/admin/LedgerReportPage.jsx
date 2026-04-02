@@ -1,130 +1,52 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/services/api";
 import DataTable from "@/components/shared/DataTable";
-import StatusBadge from "@/components/shared/StatusBadge";
 import StatsCard from "@/components/shared/StatsCard";
 import SkeletonLoader from "@/components/shared/SkeletonLoader";
 import { Button } from "@/components/ui/button";
 import { exportTransactionsToCsv, exportTransactionsToPdf } from "@/lib/export";
-import {
-  ArrowDownLeft,
-  ArrowDownToLine,
-  ArrowUpRight,
-  FileSpreadsheet,
-  Scale,
-  TrendingUp,
-} from "lucide-react";
+import { ArrowDownLeft, ArrowDownToLine, ArrowUpRight, FileSpreadsheet, Scale, TrendingUp } from "lucide-react";
+
+const formatCurrency = (value) => `₹${Number(value || 0).toLocaleString("en-IN")}`;
 
 const LedgerReportPage = ({ type }) => {
-  const [transactions, setTransactions] = useState([]);
+  const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const data = await api.getTransactions(type);
-      setTransactions(data);
+      setRows(await api.getStatementRows(type));
       setLoading(false);
     };
-
     load();
   }, [type]);
 
-  const totalCredit = useMemo(
-    () => transactions.filter((item) => item.status === "success").reduce((sum, item) => sum + item.amount, 0),
-    [transactions]
-  );
-  const totalDebit = useMemo(
-    () => transactions.filter((item) => item.status !== "success").reduce((sum, item) => sum + item.amount, 0),
-    [transactions]
-  );
-  const netBalance = totalCredit - totalDebit;
+  const totalCredit = useMemo(() => rows.reduce((sum, row) => sum + Number(row.credit || 0), 0), [rows]);
+  const totalDebit = useMemo(() => rows.reduce((sum, row) => sum + Number(row.debit || 0), 0), [rows]);
+  const netBalance = useMemo(() => (rows.at(-1)?.closingBalance || 0) - (rows[0]?.openingBalance || 0), [rows]);
 
-  const columns = [
-    {
-      key: "date",
-      label: "Date",
-      render: (item) => <span className="text-sm">{item.date}</span>,
-    },
-    {
-      key: "txnId",
-      label: "Txn ID",
-      render: (item) => <span className="font-mono text-xs">{item.txnId}</span>,
-    },
-    {
-      key: "customer",
-      label: "Party",
-      render: (item) => (
-        <div className="flex items-center gap-2">
-          <div className={`flex h-8 w-8 items-center justify-center rounded-xl ${item.type === "payin" ? "bg-success/10" : "bg-primary/10"}`}>
-            {item.type === "payin" ? (
-              <ArrowDownLeft className="h-4 w-4 text-success" />
-            ) : (
-              <ArrowUpRight className="h-4 w-4 text-primary" />
-            )}
-          </div>
-          <span className="text-sm font-medium">{item.customer}</span>
-        </div>
-      ),
-    },
-    { key: "method", label: "Method" },
-    {
-      key: "amount",
-      label: "Credit",
-      render: (item) => (
-        <span className={`font-semibold tabular-nums ${item.status === "success" ? "text-success" : "text-muted-foreground"}`}>
-          {item.status === "success" ? `+₹${item.amount.toLocaleString("en-IN")}` : "-"}
-        </span>
-      ),
-    },
-    {
-      key: "status",
-      label: "Debit",
-      render: (item) => (
-        <span className={`font-semibold tabular-nums ${item.status !== "success" ? "text-destructive" : "text-muted-foreground"}`}>
-          {item.status !== "success" ? `-₹${item.amount.toLocaleString("en-IN")}` : "-"}
-        </span>
-      ),
-    },
-    {
-      key: "id",
-      label: "Status",
-      render: (item) => <StatusBadge status={item.status} />,
-    },
-  ];
-
-  const filters = [
-    {
-      key: "status",
-      label: "Status",
-      options: [
-        { value: "all", label: "All Status" },
-        { value: "success", label: "Success" },
-        { value: "pending", label: "Pending" },
-        { value: "failed", label: "Failed" },
-      ],
-    },
-    {
-      key: "method",
-      label: "Method",
-      options: [
-        { value: "all", label: "All Methods" },
-        { value: "UPI", label: "UPI" },
-        { value: "IMPS", label: "IMPS" },
-        { value: "NEFT", label: "NEFT" },
-        { value: "RTGS", label: "RTGS" },
-      ],
-    },
-  ];
-
+  const exportRows = rows.map((row) => ({ date: row.txnDate, txnId: row.txnId, customer: row.member, type: row.txnType, method: row.method, status: row.status, amount: row.credit || row.debit }));
+  const icons = [ArrowDownLeft, ArrowUpRight, Scale, TrendingUp];
   const stats = [
     { label: "Total Credit", value: totalCredit, change: 8.5, prefix: "₹" },
     { label: "Total Debit", value: totalDebit, change: -3.2, prefix: "₹" },
-    { label: "Net Balance", value: netBalance, change: 12.1, prefix: "₹" },
-    { label: "Entries", value: transactions.length, change: 5.0 },
+    { label: "Net Movement", value: netBalance, change: 12.1, prefix: "₹" },
+    { label: "Entries", value: rows.length, change: 5 },
   ];
 
-  const icons = [ArrowDownLeft, ArrowUpRight, Scale, TrendingUp];
+  const columns = [
+    { key: "serialNo", label: "Sl.No." },
+    { key: "txnId", label: "Txn Id", render: (item) => <span className="font-mono text-xs">{item.txnId}</span> },
+    { key: "member", label: "Member", render: (item) => <span className="font-medium text-foreground">{item.member}</span> },
+    { key: "openingBalance", label: "O.B.", render: (item) => formatCurrency(item.openingBalance) },
+    { key: "credit", label: "C.R.", render: (item) => <span className="font-semibold text-success">{item.credit ? formatCurrency(item.credit) : "-"}</span> },
+    { key: "debit", label: "D.B.", render: (item) => <span className="font-semibold text-destructive">{item.debit ? formatCurrency(item.debit) : "-"}</span> },
+    { key: "closingBalance", label: "C.B.", render: (item) => <span className="font-semibold">{formatCurrency(item.closingBalance)}</span> },
+    { key: "txnType", label: "Txn Type", render: (item) => <span className="capitalize">{item.txnType}</span> },
+    { key: "method", label: "Mode" },
+    { key: "txnDate", label: "Txn Date", render: (item) => <span className="text-muted-foreground">{item.txnDate}</span> },
+  ];
 
   return (
     <div className="space-y-6 max-w-7xl">
@@ -133,49 +55,23 @@ const LedgerReportPage = ({ type }) => {
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
               <FileSpreadsheet className="h-3.5 w-3.5" />
-              Ledger Intelligence
+              Ledger Statement
             </div>
             <h1 className="mt-4 text-3xl font-bold tracking-tight text-foreground capitalize">{type} Ledger Report</h1>
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              Detailed credit and debit visibility for operations, reconciliation, and audit. Export the same view to CSV or print-ready PDF whenever needed.
-            </p>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">Statement-style admin ledger with opening balance, debit, credit, closing balance, mode, and transaction timestamps.</p>
           </div>
-
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              className="rounded-xl"
-              onClick={() => exportTransactionsToCsv(transactions, `${type}-ledger.csv`)}
-            >
-              <ArrowDownToLine className="mr-2 h-4 w-4" />
-              Export CSV
-            </Button>
-            <Button
-              className="rounded-xl gradient-primary text-primary-foreground"
-              onClick={() => exportTransactionsToPdf(transactions, `${type}-ledger.pdf`, `${type.toUpperCase()} Ledger Report`)}
-            >
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
-              Export PDF
-            </Button>
+            <Button variant="outline" className="rounded-xl" onClick={() => exportTransactionsToCsv(exportRows, `${type}-ledger.csv`)}><ArrowDownToLine className="mr-2 h-4 w-4" />Export CSV</Button>
+            <Button className="rounded-xl gradient-primary text-primary-foreground" onClick={() => exportTransactionsToPdf(exportRows, `${type}-ledger.pdf`, `${type.toUpperCase()} Ledger Statement`)}><FileSpreadsheet className="mr-2 h-4 w-4" />Export PDF</Button>
           </div>
         </div>
       </section>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {loading ? (
-          <SkeletonLoader variant="stat" count={4} />
-        ) : (
-          stats.map((stat, index) => <StatsCard key={stat.label} {...stat} icon={icons[index]} delay={index * 100} />)
-        )}
+        {loading ? <SkeletonLoader variant="stat" count={4} /> : stats.map((stat, index) => <StatsCard key={stat.label} {...stat} icon={icons[index]} delay={index * 100} />)}
       </div>
 
-      <DataTable
-        data={transactions}
-        columns={columns}
-        filters={filters}
-        loading={loading}
-        searchPlaceholder="Search ledger by txn ID, party, or method..."
-      />
+      <DataTable data={rows} columns={columns} loading={loading} searchable filters={[{ key: "txnType", label: "Txn Type", options: [{ value: "all", label: "All Types" }, { value: "payin", label: "Payin" }, { value: "payout", label: "Payout" }] }]} searchPlaceholder="Search ledger statement..." />
     </div>
   );
 };

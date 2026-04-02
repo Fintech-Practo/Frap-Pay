@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
@@ -15,6 +15,8 @@ import {
   LogOut,
   Settings,
   KeyRound,
+  Globe,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import NotificationPanel from "@/components/shared/NotificationPanel";
 import ThemeToggle from "@/components/shared/ThemeToggle";
+import { api } from "@/services/api";
 
 const sidebarItems = [
   {
@@ -59,9 +62,43 @@ const ClientLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [expanded, setExpanded] = useState(["Reports"]);
+  const [profile, setProfile] = useState(null);
+  const desktopNavRef = useRef(null);
+  const mobileNavRef = useRef(null);
 
   const location = useLocation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    api.getClientProfile().then(setProfile);
+  }, []);
+
+  const activeGroups = useMemo(
+    () =>
+      sidebarItems
+        .filter((item) => item.children?.some((child) => location.pathname.startsWith(child.path)))
+        .map((item) => item.label),
+    [location.pathname]
+  );
+
+  useEffect(() => {
+    if (!activeGroups.length) return;
+    setExpanded((prev) => Array.from(new Set([...prev, ...activeGroups])));
+  }, [activeGroups]);
+
+  useEffect(() => {
+    const savedPosition = Number(sessionStorage.getItem("client-sidebar-scroll") || 0);
+    const restoreScroll = () => {
+      if (desktopNavRef.current) desktopNavRef.current.scrollTop = savedPosition;
+      if (mobileNavRef.current) mobileNavRef.current.scrollTop = savedPosition;
+    };
+    restoreScroll();
+    window.requestAnimationFrame(restoreScroll);
+  }, [location.pathname, sidebarOpen, mobileOpen]);
+
+  const handleSidebarScroll = (event) => {
+    sessionStorage.setItem("client-sidebar-scroll", String(event.currentTarget.scrollTop));
+  };
 
   const toggleExpand = (label) => {
     setExpanded((prev) =>
@@ -73,7 +110,7 @@ const ClientLayout = () => {
 
   const isActive = (path) => location.pathname === path;
 
-  const SidebarContent = () => (
+  const renderSidebarContent = (navRef) => (
     <div className="flex flex-col h-full">
       <div className="border-b border-border/50 p-6">
         <Link to="/client" className="flex items-center gap-2.5">
@@ -84,13 +121,13 @@ const ClientLayout = () => {
           </div>
           {sidebarOpen && (
             <span className="text-[1.15rem] font-semibold tracking-tight text-foreground">
-              FinStack
+              FrapPay
             </span>
           )}
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-1.5 overflow-y-auto p-4">
+      <nav ref={navRef} onScroll={handleSidebarScroll} className="flex-1 space-y-1.5 overflow-y-auto p-4">
         <Link
           to="/client"
           className={cn(
@@ -176,7 +213,7 @@ const ClientLayout = () => {
           sidebarOpen ? "w-60" : "w-16"
         )}
       >
-        <SidebarContent />
+        {renderSidebarContent(desktopNavRef)}
       </aside>
 
       {mobileOpen && (
@@ -186,7 +223,7 @@ const ClientLayout = () => {
             onClick={() => setMobileOpen(false)}
           />
           <aside className="absolute left-0 top-0 h-full w-60 bg-card border-r border-border/50 shadow-lg">
-            <SidebarContent />
+            {renderSidebarContent(mobileNavRef)}
           </aside>
         </div>
       )}
@@ -263,6 +300,18 @@ const ClientLayout = () => {
                 >
                   <KeyRound className="h-4 w-4 mr-2" /> Forgot PIN
                 </DropdownMenuItem>
+
+                {profile?.fallbackUrls?.payin && (
+                  <DropdownMenuItem onClick={() => window.open(profile.fallbackUrls.payin, "_blank", "noopener,noreferrer")}>
+                    <Globe className="h-4 w-4 mr-2" /> Callback Payin
+                  </DropdownMenuItem>
+                )}
+
+                {profile?.fallbackUrls?.payout && (
+                  <DropdownMenuItem onClick={() => window.open(profile.fallbackUrls.payout, "_blank", "noopener,noreferrer")}>
+                    <ExternalLink className="h-4 w-4 mr-2" /> Callback Payout
+                  </DropdownMenuItem>
+                )}
 
                 <DropdownMenuSeparator />
 
